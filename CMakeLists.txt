@@ -80,7 +80,7 @@ include(CPack)
 
 find_package(Catch2 REQUIRED)
 enable_testing()
-add_subdirectory(lib/Catch2)
+#add_subdirectory(lib/Catch2)
 include_directories( catch_test ${xtensor_INCLUDE_DIRS} ${xsimd_INCLUDE_DIRS} ${xtl_INCLUDE_DIRS} ${SDL2_INCLUDE_DIR} ${OPENGL_INCLUDE_DIR} ${CMAKE_BINARY_DIR})
 add_executable(catch_test test/test.cpp src/conv.hpp)
 target_link_libraries(catch_test Catch2::Catch2)

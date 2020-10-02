@@ -202,29 +202,33 @@ void conv2d_backward(
     auto P = d_out_shape[HEIGHT_IDX];
     auto Q = d_out_shape[WIDTH_IDX];
 
-    d_x = 0;
+    //d_x = 0;
+    xt::view(d_x, xt::all(), xt::all(), xt::all(), xt::all()) = 0;
     //d_input_image.resize({inp_shape}); //todo: use this instead of initializing with zeros
-    d_f = 0;
+   //d_f = 0;
+    xt::view(d_f, xt::all(), xt::all(), xt::all(), xt::all()) = 0;
     //d_filter.resize({f_shape}); //todo: use this instead of initializing with zeros
 
     for (uint32_t i=0; i <= uint32_t((H-R)/strides); i += 1){
         for (uint32_t j = 0; j <= uint32_t((W - S)/strides); j += 1)
         {
-            auto out_select = xt::view(d_o, xt::all(), xt::all(), i, j);
-            auto x_i = i * strides;
-            auto y_i = j * strides;
+            auto out_select = xt::view(d_o, xt::all(), xt::all(), xt::range(i, i+R), xt::range(j, j+S));
+            auto y_i = i * strides;
+            auto x_i = j * strides;
 
             for (uint32_t k = 0; k < K; k++)
             {
                 //auto f_slice = xt::view(f, k, xt::all(), xt::all(), xt::all());
-                auto fi_slice = xt::view(fi, k, xt::all(), xt::all(), xt::all());
-                auto inp_select = xt::view(x, k, xt::all(), xt::range(x_i, x_i + R), xt::range(y_i, y_i + S));
+                auto fi_slice = xt::view(fi, xt::range(k, k + 1), xt::all(), xt::all(), xt::all());
+                auto inp_select = xt::view(x, xt::all(), xt::all(), xt::range(y_i, y_i + R), xt::range(x_i, x_i + S));
 
-                auto prod_inp_img = xt::sum(out_select * fi_slice, {OUTPUT_CHANNELS_IDX, HEIGHT_IDX, WIDTH_IDX});
-                auto prod_inp_filt = xt::sum(out_select * inp_select, {OUTPUT_CHANNELS_IDX, HEIGHT_IDX, WIDTH_IDX});
+                xt::xarray<typename E::value_type> prod_inp_img = xt::sum(out_select * fi_slice, {INPUT_CHANNELS_IDX});
+                //std::cout<<prod_inp_img<<'\n';
+                xt::xarray<typename E::value_type> prod_inp_filt = xt::sum(out_select * inp_select, {INPUT_CHANNELS_IDX});
+                //std::cout<<prod_inp_filt<<'\n';
 
-                xt::view(d_x, k, xt::all(), xt::range(x_i, x_i + R), xt::range(y_i, y_i + S)) += prod_inp_img;
-                xt::view(d_f, k, xt::all(), xt::all(), xt::all()) += prod_inp_filt;
+                xt::view(d_f, xt::range(k, k + 1), xt::all(), xt::all(), xt::all()) += prod_inp_filt;
+                xt::view(d_x, xt::all(), xt::all(), xt::range(y_i, y_i + R), xt::range(x_i, x_i + S)) += prod_inp_img;
             }
         }
     }
